@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HỆ THỐNG ĐIỀN BIỂU MẪU TỰ ĐỘNG</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+            font-family: 'Arial', sans-serif;
+        }
+
+        body {
+            background-color: #1a1a1a;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            color: white;
+        }
+
+        .container {
+            width: 100%;
+            max-width: 1000px;
+            padding: 20px;
+        }
+
+        .main-title {
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 300;
+            letter-spacing: 2px;
+        }
+
+        .signup-container {
+            display: flex;
+            background: rgba(0, 0, 0, 0.8);
+            border-radius: 5px;
+            overflow: hidden;
+        }
+
+        .image-section {
+            flex: 1;
+            background: url('/static/images/hinh1.webp') center/cover;
+            padding: 40px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+        }
+
+        .image-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.5);
+        }
+
+        .image-section h2, 
+        .image-section p {
+            position: relative;
+            z-index: 1;
+            text-align: center;
+        }
+
+        .image-section h2 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            font-weight: 300;
+        }
+
+        .form-section {
+            flex: 1;
+            padding: 40px;
+            background: #222;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid #444;
+            color: white;
+            font-size: 16px;
+        }
+
+        .form-group input::placeholder {
+            color: #666;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-bottom-color: #3498db;
+        }
+
+        .register-btn {
+            width: 100%;
+            padding: 12px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 20px;
+        }
+
+        .register-btn:hover {
+            background: #2980b9;
+        }
+
+        .social-login {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .social-login p {
+            color: #666;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .social-icons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .social-icons a {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            border: 1px solid #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .social-icons a:hover {
+            background: #3498db;
+            border-color: #3498db;
+            color: white;
+        }
+
+        .alert {
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .alert-error {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+            border: 1px solid #e74c3c;
+        }
+
+        .alert-success {
+            background-color: rgba(46, 204, 113, 0.2);
+            color: #2ecc71;
+            border: 1px solid #2ecc71;
+        }
+
+        .login-link {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .login-link a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .login-link a:hover {
+            text-decoration: underline;
+        }
+
+        @media (max-width: 768px) {
+            .signup-container {
+                flex-direction: column;
+            }
+            
+            .image-section {
+                padding: 60px 20px;
+            }
+            
+            .form-section {
+                padding: 30px 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="main-title">HỆ THỐNG ĐIỀN BIỂU MẪU</h1>
+        <div class="signup-container">
+            <div class="image-section">
+                <h2>SIGN UP</h2>
+                <p>Create your account to get started</p>
+            </div>
+            <div class="form-section">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                <!-- Find this line in the form tag -->
+                <form action="/signup" method="POST">
+
+                    <div class="form-group">
+                        <input type="text" name="fullname" placeholder="Họ và tên" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="email" name="email" placeholder="Email" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" name="password" placeholder="Mật khẩu" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" name="confirm_password" placeholder="Xác nhận mật khẩu" required>
+                    </div>
+                    <button type="submit" class="register-btn">Đăng ký</button>
+                    <div class="login-link">
+                        <p>Đã có tài khoản? <a href="{{ url_for('login') }}">Đăng nhập</a></p>
+                    </div>
+                    <div class="social-login">
+                        <p>Hoặc đăng ký với</p>
+                        <div class="social-icons">
+                            <a href="#"><i class="fab fa-facebook-f"></i></a>
+                            <a href="#"><i class="fab fa-google"></i></a>
+                            <a href="#"><i class="fab fa-twitter"></i></a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

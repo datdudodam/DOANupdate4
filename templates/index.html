@@ -1,0 +1,395 @@
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Hệ Thống Nhập Liệu</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        body {
+            background: linear-gradient(135deg, #f0f9ff 0%, #e6f3ff 100%);
+        }
+        .form-input-group:focus-within label {
+            color: #2563eb;
+            transform: translateY(-0.25rem);
+        }
+        .form-input-group:hover label {
+            color: #4b5563;
+        }
+        .form-input {
+            transition: all 0.3s ease;
+        }
+        .form-input:focus {
+            transform: translateY(-0.125rem);
+            box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+        }
+        .suggestion-button {
+            transition: all 0.2s ease;
+        }
+        .suggestion-button:hover {
+            transform: translateX(0.125rem);
+        }
+        .card-container {
+            backdrop-filter: blur(10px);
+            background: rgba(255, 255, 255, 0.95);
+        }
+        
+    </style>
+</head>
+<body class="min-h-screen py-12 px-4 font-[Inter]">
+    <div class="max-w-3xl mx-auto">
+        <div class="card-container shadow-2xl rounded-3xl overflow-hidden border border-gray-100/50">
+            <div class="bg-gradient-to-r from-blue-600 via-blue-500 to-blue-600 px-8 py-8">
+                <h2 class="text-3xl font-bold text-white text-center tracking-tight">Hệ Thống Nhập Liệu Thông Minh</h2>
+                <p class="text-blue-100 text-center mt-3 text-base font-medium">Vui lòng điền đầy đủ thông tin bên dưới</p>
+            </div>
+            
+            <div class="p-8">
+                <form action="/submit" method="post" class="space-y-6">
+                    <div class="form-input-group group transition-all duration-300">
+                        <label for="document_name" class="block text-sm font-semibold text-gray-700 mb-2 transition-all duration-300">Tên tài liệu</label>
+                        <div class="relative">
+                            <input 
+                                type="text" 
+                                id="document_name" 
+                                name="document_name" 
+                                class="form-input w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-300 text-gray-900 placeholder-gray-400 shadow-sm bg-white/80"
+                                placeholder="Nhập tên tài liệu"
+                                autocomplete="off"
+                            >
+                            <div id="error-document_name" class="hidden mt-2 text-red-500 text-sm"></div>
+                        </div>
+                    </div>
+                    {% for field in fields %}
+                    <div class="form-input-group group transition-all duration-300">
+                        <label for="{{ field.field_code }}" class="block text-sm font-semibold text-gray-700 mb-2 transition-all duration-300">{{ field.field_name }}</label>
+                        <div class="relative">
+                            <div class="relative flex gap-3">
+                                <input 
+                                    type="text" 
+                                    id="{{ field.field_code }}" 
+                                    name="{{ field.field_code }}" 
+                                    class="form-input w-full px-4 py-3.5 rounded-xl border border-gray-200 focus:border-blue-500 focus:ring-2 focus:ring-blue-200 transition-all duration-300 text-gray-900 placeholder-gray-400 shadow-sm bg-white/80"
+                                    required
+                                    placeholder="Nhập {{ field.field_name | lower }}"
+                                    autocomplete="off"
+                                >
+                                <button 
+                                    type="button" 
+                                    onclick="loadSuggestions('{{ field.field_code }}')" 
+                                    class="suggestion-button px-4 py-2 bg-blue-50 hover:bg-blue-100 text-blue-600 rounded-xl transition-all duration-300 flex items-center justify-center shadow-sm hover:shadow focus:ring-2 focus:ring-blue-200 touch-manipulation relative group"
+                                    title="Xem gợi ý"
+                                    aria-label="Xem gợi ý cho {{ field.field_name }}"
+                                >
+                                    <span class="suggestion-loading hidden">
+                                        <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </span>
+                                    <span class="suggestion-icon">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7l5 5m0 0l-5 5m5-5H6"></path>
+                                        </svg>
+                                    </span>
+                                    <div class="absolute invisible group-hover:visible bg-blue-600 text-white text-xs rounded py-1 px-2 -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                                        Xem gợi ý cho {{ field.field_name }}
+                                    </div>
+                                </button>
+                                <button 
+                                    type="button" 
+                                    onclick="loadGptSuggestions('{{ field.field_code }}')" 
+                                    class="suggestion-button px-4 py-2 bg-green-50 hover:bg-green-100 text-green-600 rounded-xl transition-all duration-300 flex items-center justify-center shadow-sm hover:shadow focus:ring-2 focus:ring-green-200 touch-manipulation relative group"
+                                    title="Gợi ý AI"
+                                    aria-label="Gợi ý AI cho {{ field.field_name }}"
+                                >
+                                    <span class="gpt-suggestion-loading hidden">
+                                        <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </span>
+                                    <span class="gpt-suggestion-icon">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 13.5l4.5-4.5m0 0l4.5 4.5"></path>
+                                        </svg>
+                                    </span>
+                                    <div class="absolute invisible group-hover:visible bg-green-600 text-white text-xs rounded py-1 px-2 -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                                        Gợi ý AI cho {{ field.field_name }}
+                                    </div>
+                                </button>
+                            </div>
+                            <ul id="suggestions-{{ field.field_code }}" class="absolute z-10 w-full bg-white/95 mt-2 rounded-xl shadow-lg border border-gray-100 hidden max-h-48 overflow-y-auto backdrop-blur-sm divide-y divide-gray-100">
+                            </ul>
+                            <div id="error-{{ field.field_code }}" class="hidden mt-2 text-red-500 text-sm"></div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                    
+                    <div class="flex flex-col gap-4 pt-8">
+                        <button type="submit" class="w-full bg-gradient-to-r from-blue-600 to-blue-500 text-white py-4 rounded-xl hover:from-blue-700 hover:to-blue-600 focus:ring-4 focus:ring-blue-200 transition-all duration-300 flex items-center justify-center space-x-2 font-semibold shadow-lg shadow-blue-200/50 hover:shadow-blue-300/50 hover:transform hover:-translate-y-0.5">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M5 13l4 4L19 7"></path>
+                            </svg>
+                            <span>Lưu Thông Tin</span>
+                        </button>
+                        
+                        <button type="button" onclick="generateDocx()" class="w-full bg-gradient-to-r from-green-600 to-green-500 text-white py-4 rounded-xl hover:from-green-700 hover:to-green-600 focus:ring-4 focus:ring-green-200 transition-all duration-300 flex items-center justify-center space-x-2 font-semibold shadow-lg shadow-green-200/50 hover:shadow-green-300/50 hover:transform hover:-translate-y-0.5">
+                            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"></path>
+                            </svg>
+                            <span>Tạo Tài Liệu DOCX</span>
+                        </button>
+                    </div>
+                </form>
+            </div>
+        </div>
+        
+        <div class="text-center mt-8 text-sm text-gray-500">
+            © 2024 Hệ Thống Nhập Liệu Thông Minh. Bảo lưu mọi quyền.
+        </div>
+    </div>
+
+    <script>
+        document.addEventListener('mousedown', function(e) {
+            document.querySelectorAll("ul[id^='suggestions-']").forEach(suggestionsList => {
+                if (!suggestionsList.contains(e.target) && !e.target.closest('button[onclick^="loadSuggestions"]')) {
+                    suggestionsList.classList.add('hidden');
+                }
+            });
+        });
+    
+        function loadSuggestions(fieldCode) {
+            const suggestionsList = document.getElementById(`suggestions-${fieldCode}`);
+            const input = document.getElementById(fieldCode);
+            const button = input.nextElementSibling;
+            const loadingIcon = button.querySelector('.suggestion-loading');
+            const suggestionIcon = button.querySelector('.suggestion-icon');
+            const errorDiv = document.getElementById(`error-${fieldCode}`);
+            
+            // Lấy tất cả giá trị hiện tại của form
+            const formData = {};
+            document.querySelectorAll('form input[type="text"]').forEach(input => {
+                if (input.value.trim()) {
+                    formData[input.id] = input.value.trim();
+                }
+            });
+    
+            // Toggle loading state
+            loadingIcon.classList.remove('hidden');
+            suggestionIcon.classList.add('hidden');
+            button.disabled = true;
+            errorDiv.classList.add('hidden');
+    
+            fetch('/get_suggestions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    field_code: fieldCode,
+                    partial_form: formData
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                suggestionsList.innerHTML = '';
+                if (data.suggestions && data.suggestions.length > 0) {
+                    data.suggestions.forEach((suggestion, index) => {
+                        const li = document.createElement('li');
+                        li.className = 'px-4 py-3 hover:bg-blue-50 cursor-pointer transition-colors duration-200 touch-manipulation';
+                        li.textContent = suggestion;
+                        li.setAttribute('role', 'option');
+                        li.setAttribute('tabindex', '0');
+                        li.onclick = () => {
+                            input.value = suggestion;
+                            suggestionsList.classList.add('hidden');
+                            input.focus();
+                        };
+                        li.onkeypress = (e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                input.value = suggestion;
+                                suggestionsList.classList.add('hidden');
+                                input.focus();
+                            }
+                        };
+                        suggestionsList.appendChild(li);
+                    });
+                    suggestionsList.classList.remove('hidden');
+                    suggestionsList.setAttribute('role', 'listbox');
+                    suggestionsList.setAttribute('aria-label', 'Danh sách gợi ý');
+                } else {
+                    errorDiv.textContent = 'Không có gợi ý nào cho trường này';
+                    errorDiv.classList.remove('hidden');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                errorDiv.textContent = 'Có lỗi xảy ra khi tải gợi ý. Vui lòng thử lại.';
+                errorDiv.classList.remove('hidden');
+            })
+            .finally(() => {
+                loadingIcon.classList.add('hidden');
+                suggestionIcon.classList.remove('hidden');
+                button.disabled = false;
+            });
+        }
+    
+        function loadGptSuggestions(fieldCode) {
+            const suggestionsList = document.getElementById(`suggestions-${fieldCode}`);
+            const input = document.getElementById(fieldCode);
+            const button = input.nextElementSibling.nextElementSibling;
+            const loadingIcon = button.querySelector('.gpt-suggestion-loading');
+            const suggestionIcon = button.querySelector('.gpt-suggestion-icon');
+            const errorDiv = document.getElementById(`error-${fieldCode}`);
+    
+            // Toggle loading state
+            loadingIcon.classList.remove('hidden');
+            suggestionIcon.classList.add('hidden');
+            button.disabled = true;
+            errorDiv.classList.add('hidden');
+    
+            fetch('/get_gpt_suggestions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ field_code: fieldCode })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                suggestionsList.innerHTML = '';
+                if (data.suggestions && data.suggestions.length > 0) {
+                    data.suggestions.forEach((suggestion, index) => {
+                        const li = document.createElement('li');
+                        li.className = 'px-4 py-3 hover:bg-green-50 cursor-pointer transition-colors duration-200 touch-manipulation';
+                        li.textContent = suggestion;
+                        li.setAttribute('role', 'option');
+                        li.setAttribute('tabindex', '0');
+                        li.onclick = () => {
+                            input.value = suggestion;
+                            suggestionsList.classList.add('hidden');
+                            input.focus();
+                        };
+                        li.onkeypress = (e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                input.value = suggestion;
+                                suggestionsList.classList.add('hidden');
+                                input.focus();
+                            }
+                        };
+                        suggestionsList.appendChild(li);
+                    });
+                    suggestionsList.classList.remove('hidden');
+                    suggestionsList.setAttribute('role', 'listbox');
+                    suggestionsList.setAttribute('aria-label', 'Danh sách gợi ý từ AI');
+                } else {
+                    errorDiv.textContent = 'Không có gợi ý nào từ AI cho trường này';
+                    errorDiv.classList.remove('hidden');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                errorDiv.textContent = 'Có lỗi xảy ra khi tải gợi ý từ AI. Vui lòng thử lại.';
+                errorDiv.classList.remove('hidden');
+            })
+            .finally(() => {
+                loadingIcon.classList.add('hidden');
+                suggestionIcon.classList.remove('hidden');
+                button.disabled = false;
+            });
+        }
+    
+        function generateDocx() { 
+    const button = event.target.closest('button');
+    const originalContent = button.innerHTML;
+    button.disabled = true;
+    button.innerHTML = '<svg class="animate-spin h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24"><circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle><path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path></svg><span class="ml-2">Đang xử lý...</span>';
+
+    // Thu thập dữ liệu từ form
+    const formData = {};
+    const form = document.querySelector('form');
+    const inputs = form.querySelectorAll('input[type="text"]');
+
+    inputs.forEach(input => {
+        if (input.id && input.value) {
+            formData[input.id] = input.value;
+        }
+    });
+    
+    // Thêm tên tài liệu vào formData nếu có
+    const documentNameInput = document.getElementById('document_name');
+    if (documentNameInput && documentNameInput.value) {
+        formData['filename'] = documentNameInput.value;
+    }
+
+    fetch('/generate-docx', {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'Accept': 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'
+        },
+        body: JSON.stringify(formData)
+    })
+    .then(response => {
+        const contentType = response.headers.get('Content-Type');
+        if (!response.ok) {
+            return response.json().then(err => {
+                throw new Error(err.error || 'Có lỗi xảy ra khi tạo tài liệu');
+            });
+        }
+        if (!contentType || !contentType.includes('application/vnd.openxmlformats-officedocument.wordprocessingml.document')) {
+            throw new Error('Định dạng tài liệu không hợp lệ');
+        }
+        return response.blob().then(blob => ({ blob, headers: response.headers }));
+    })
+    .then(({ blob, headers }) => {
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+        let filename = 'form-data.docx';
+        
+        // Cố gắng lấy tên file từ Content-Disposition header
+        const contentDisposition = headers.get('Content-Disposition');
+        if (contentDisposition) {
+            const filenameMatch = contentDisposition.match(/filename="(.+?)"/i);
+            if (filenameMatch && filenameMatch[1]) {
+                filename = filenameMatch[1];
+            } else {
+                filename = `form-data-${timestamp}.docx`;
+            }
+        }
+        
+        a.href = url;
+        a.download = filename;
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        window.URL.revokeObjectURL(url);
+
+        button.disabled = false;
+        button.innerHTML = originalContent;
+    })
+    .catch(error => {
+        console.error('Error:', error);
+        button.disabled = false;
+        button.innerHTML = originalContent;
+        alert(error.message || 'Có lỗi xảy ra khi tạo tài liệu. Vui lòng thử lại.');
+    });
+}
+
+    </script>
+</body>
+</html>

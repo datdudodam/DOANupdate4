@@ -1,0 +1,972 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Biểu mẫu</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        :root {
+            --primary-color: #4f46e5;
+            --hover-color: #4338ca;
+            --bg-color: #f9fafb;
+            --text-color: #111827;
+            --border-color: #e5e7eb;
+            --card-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1), 0 4px 6px -2px rgba(0, 0, 0, 0.05);
+            --gradient-primary: linear-gradient(135deg, #4f46e5 0%, #7c3aed 100%);
+            --gradient-secondary: linear-gradient(135deg, #10b981 0%, #059669 100%);
+            --gradient-danger: linear-gradient(135deg, #ef4444 0%, #dc2626 100%);
+            --transition-normal: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        body {
+            font-family: 'Segoe UI', Arial, sans-serif;
+            margin: 0;
+            padding: 0;
+            background-color: var(--bg-color);
+            color: var(--text-color);
+            min-height: 100vh;
+            background-image: radial-gradient(circle at top right, rgba(79, 70, 229, 0.1) 0%, transparent 40%),
+                            radial-gradient(circle at bottom left, rgba(16, 185, 129, 0.1) 0%, transparent 40%);
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 1.5rem;
+            background: transparent;
+        }
+        
+        .header {
+            display: grid;
+            grid-template-columns: auto 1fr auto;
+            align-items: center;
+            gap: 2rem;
+            margin-bottom: 2rem;
+            padding: 1rem;
+            background: white;
+            border-radius: 12px;
+            box-shadow: var(--card-shadow);
+        }
+
+        .header::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 100px;
+            height: 2px;
+            background: var(--gradient-primary);
+            border-radius: 2px;
+        }
+
+        .header h2 {
+            margin: 0;
+            color: var(--text-color);
+            font-size: 1.75rem;
+            font-weight: 700;
+            background: var(--gradient-primary);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            display: inline-block;
+        }
+
+        .search-bar {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+            position: relative;
+        }
+
+        .search-input {
+            padding: 0.75rem 1rem 0.75rem 2.5rem;
+            border: 1px solid var(--border-color);
+            border-radius: 50px;
+            font-size: 0.875rem;
+            width: 250px;
+            transition: var(--transition-normal);
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.05);
+        }
+        
+        .search-input:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+            width: 280px;
+        }
+        
+        .user-info {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            margin-right: 1rem;
+            font-size: 0.875rem;
+        }
+
+        .user-name, .user-email {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            color: var(--text-color);
+        }
+
+        .logout-btn {
+            display: flex;
+            align-items: center;
+            gap: 0.5rem;
+            padding: 0.5rem 1rem;
+            background: var(--gradient-danger);
+            color: white;
+            border-radius: 50px;
+            text-decoration: none;
+            font-weight: 500;
+            transition: var(--transition-normal);
+        }
+
+        .logout-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(239, 68, 68, 0.25);
+        }
+
+        .search-bar::before {
+            content: '\f002';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            position: absolute;
+            left: 1rem;
+            top: 50%;
+            transform: translateY(-50%);
+            color: #9ca3af;
+            z-index: 1;
+        }
+
+        .form-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+            gap: 20px;
+            margin: 1rem 0;
+            padding: 0.5rem;
+        }
+
+        .form-card {
+            width: 100%;
+            min-width: unset;
+            max-width: unset;
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+                padding: 1rem;
+            transition: var(--transition-normal);
+            cursor: pointer;
+            position: relative;
+            overflow: hidden;
+            box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+            display: flex;
+            flex-direction: column;
+            height: 120px;
+            }
+            
+        .form-card::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 4px;
+            height: 100%;
+            background: var(--gradient-primary);
+            opacity: 0.7;
+            transition: var(--transition-normal);
+            }
+
+        .form-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--card-shadow);
+            border-color: rgba(79, 70, 229, 0.3);
+        }
+
+        .form-card:hover::before {
+            width: 6px;
+            opacity: 1;
+        }
+
+        .form-card h4 {
+            margin: 0 0 0.5rem 0;
+            color: var(--text-color);
+            font-size: 1rem;
+            font-weight: 500;
+            line-height: 1.4;
+            transition: var(--transition-normal);
+        }
+
+        .form-card:hover h4 {
+            color: var(--primary-color);
+        }
+
+        .form-meta {
+            display: flex;
+            justify-content: space-between;
+            font-size: 0.75rem;
+            color: #6b7280;
+            margin-top: auto;
+            padding-top: 0.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .form-actions {
+            display: none;
+        }
+
+        .form-card:hover .form-actions {
+            display: flex;
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            right: 0;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 0.5rem;
+            border-top: 1px solid var(--border-color);
+        }
+
+        .action-button {
+            padding: 0.5rem 1rem;
+            border: none;
+            border-radius: 50px;
+            font-size: 0.75rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: var(--transition-normal);
+            display: flex;
+            align-items: center;
+            gap: 0.375rem;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+
+        .action-button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+        }
+
+        .edit-btn {
+            background: var(--gradient-secondary);
+            color: white;
+        }
+
+        .edit-btn::before {
+            content: '\f304';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+        }
+
+        .delete-btn {
+            background: var(--gradient-danger);
+            color: white;
+        }
+
+        .delete-btn::before {
+            content: '\f2ed';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+        }
+
+        .view-btn {
+            background: linear-gradient(135deg, #3b82f6 0%, #2563eb 100%);
+            color: white;
+        }
+
+        .view-btn::before {
+            content: '\f06e';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+        }
+
+        .upload-section {
+            text-align: center;
+            padding: 3rem;
+            border: 2px dashed var(--border-color);
+            border-radius: 16px;
+            margin-top: 2.5rem;
+            background-color: rgba(249, 250, 251, 0.8);
+            transition: var(--transition-normal);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .upload-section::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at center, rgba(79, 70, 229, 0.05) 0%, transparent 70%);
+            z-index: 0;
+        }
+
+        .upload-section.drag-over {
+            background-color: rgba(79, 70, 229, 0.08);
+            border-color: var(--primary-color);
+            transform: scale(1.01);
+            box-shadow: 0 0 0 3px rgba(79, 70, 229, 0.2);
+        }
+
+        .upload-section.drag-over::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: radial-gradient(circle at center, rgba(79, 70, 229, 0.1) 0%, transparent 70%);
+            animation: pulse 1.5s infinite;
+            z-index: 0;
+        }
+
+        @keyframes pulse {
+            0% { opacity: 0.5; transform: scale(0.95); }
+            50% { opacity: 1; transform: scale(1); }
+            100% { opacity: 0.5; transform: scale(0.95); }
+        }
+
+        .upload-label {
+            display: inline-flex;
+            align-items: center;
+            gap: 0.75rem;
+            padding: 0.875rem 1.5rem;
+            background: var(--gradient-primary);
+            color: white;
+            border-radius: 50px;
+            cursor: pointer;
+            transition: var(--transition-normal);
+            font-weight: 600;
+            box-shadow: 0 4px 6px rgba(79, 70, 229, 0.25);
+            position: relative;
+            z-index: 1;
+        }
+
+        .upload-label:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 12px rgba(79, 70, 229, 0.3);
+        }
+
+        .upload-label:active {
+            transform: translateY(1px);
+            box-shadow: 0 2px 4px rgba(79, 70, 229, 0.2);
+        }
+
+        .upload-label i {
+            font-size: 1.25rem;
+        }
+
+        #file-upload {
+            display: none;
+        }
+
+        .progress-bar {
+            width: 80%;
+            max-width: 400px;
+            height: 6px;
+            background-color: rgba(229, 231, 235, 0.5);
+            border-radius: 50px;
+            margin: 1.5rem auto 0;
+            display: none;
+            overflow: hidden;
+            position: relative;
+            box-shadow: inset 0 1px 2px rgba(0, 0, 0, 0.1);
+        }
+
+        .progress {
+            width: 0%;
+            height: 100%;
+            background: var(--gradient-primary);
+            border-radius: 50px;
+            transition: width 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            position: relative;
+        }
+
+        .progress::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: linear-gradient(90deg,
+                        rgba(255, 255, 255, 0.1) 0%,
+                        rgba(255, 255, 255, 0.2) 50%,
+                        rgba(255, 255, 255, 0.1) 100%);
+            background-size: 200% 100%;
+            animation: shimmer 1.5s infinite;
+        }
+
+        @keyframes shimmer {
+            0% { background-position: 100% 0; }
+            100% { background-position: -100% 0; }
+        }
+
+        .message {
+            margin: 1.25rem auto 0;
+            padding: 0.875rem 1.25rem;
+            border-radius: 12px;
+            font-size: 0.875rem;
+            display: none;
+            max-width: 400px;
+            box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+            animation: fadeInUp 0.3s ease-out;
+            font-weight: 500;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 0.5rem;
+        }
+
+        @keyframes fadeInUp {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .success {
+            background-color: #ecfdf5;
+            color: #065f46;
+            border: 1px solid #a7f3d0;
+        }
+
+        .success::before {
+            content: '\f058';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            color: #10b981;
+        }
+
+        .error {
+            background-color: #fef2f2;
+            color: #991b1b;
+            border: 1px solid #fecaca;
+        }
+
+        .error::before {
+            content: '\f057';
+            font-family: 'Font Awesome 6 Free';
+            font-weight: 900;
+            color: #ef4444;
+        }
+
+        .empty-state {
+            text-align: center;
+            padding: 3rem 1.5rem;
+            color: #6b7280;
+            background-color: rgba(249, 250, 251, 0.5);
+            border-radius: 12px;
+            border: 1px dashed var(--border-color);
+            animation: fadeIn 0.5s ease-out;
+        }
+
+        .empty-state i {
+            font-size: 3.5rem;
+            margin-bottom: 1rem;
+            color: #d1d5db;
+            background: linear-gradient(135deg, #d1d5db 0%, #9ca3af 100%);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+        }
+
+        .empty-state p {
+            font-size: 0.9375rem;
+            max-width: 300px;
+            margin: 0 auto;
+            line-height: 1.5;
+        }
+
+        .layout-container {
+            display: flex;
+            min-height: 100vh;
+            width: 100%;
+        }
+
+        .sidebar {
+            width: 280px;
+            background: white;
+            padding: 2rem 1rem;
+            display: flex;
+            flex-direction: column;
+            position: fixed;
+            height: 100vh;
+            left: 0;
+            top: 0;
+            z-index: 50;
+        }
+
+        .sidebar-header {
+            margin-bottom: 2rem;
+            padding-bottom: 1rem;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .sidebar-nav {
+            display: flex;
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .nav-item {
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+            padding: 1rem;
+            color: rgba(255, 255, 255, 0.7);
+            text-decoration: none;
+            border-radius: 0.5rem;
+            transition: all 0.3s ease;
+        }
+
+        .nav-item:hover {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+        }
+
+        .nav-item.active {
+            background: var(--gradient-primary);
+            color: white;
+        }
+
+        .nav-item i {
+            width: 1.5rem;
+            text-align: center;
+        }
+
+        .main-content {
+            flex: 1;
+            margin-left: 280px;
+            padding: 2rem;
+            background: var(--bg-color);
+            min-height: 100vh;
+            max-width: calc(100vw - 280px);
+            overflow-x: hidden;
+        }
+
+        .user-profile {
+            margin-top: auto;
+            padding: 1rem;
+            border-top: 1px solid rgba(255, 255, 255, 0.1);
+            display: flex;
+            align-items: center;
+            gap: 1rem;
+        }
+
+        .user-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: var(--gradient-primary);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: bold;
+        }
+
+        .user-info {
+            flex: 1;
+        }
+
+        .user-name {
+            color: white;
+            font-size: 0.9rem;
+            margin: 0;
+        }
+
+        .user-role {
+            color: #9ca3af;
+            font-size: 0.8rem;
+            margin: 0;
+        }
+
+        .logout-btn {
+            padding: 0.5rem;
+            color: #9ca3af;
+            background: none;
+            border: none;
+            cursor: pointer;
+            transition: color 0.3s ease;
+        }
+
+        .logout-btn:hover {
+            color: white;
+        }
+
+        .menu-toggle {
+            display: block;
+            position: fixed;
+            top: 1rem;
+            left: 1rem;
+            z-index: 101;
+            background: var(--gradient-primary);
+            color: white;
+            padding: 0.5rem;
+            border-radius: 4px;
+            cursor: pointer;
+        }
+
+        @media (max-width: 1400px) {
+            .container {
+                max-width: 100%;
+            }
+
+            .form-grid {
+                grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+            }
+        }
+
+        @media (max-width: 1024px) {
+            .main-content {
+                margin-left: 0;
+                max-width: 100vw;
+            }
+
+            .header {
+                grid-template-columns: 1fr;
+                gap: 1rem;
+            }
+        }
+
+        @media (max-width: 768px) {
+            .main-content {
+                padding: 1rem;
+            }
+
+            .container {
+                padding: 1rem;
+            }
+
+            .form-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+
+        @media (max-width: 1200px) {
+            .form-grid {
+                grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+            }
+        }
+
+        @media (max-width: 768px) {
+            .form-grid {
+                grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+                gap: 15px;
+            }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="layout-container">
+        <div class="sidebar">
+            <div class="sidebar-header">
+                <h1 class="text-2xl font-bold text-white mb-8">Quản lý Biểu mẫu</h1>
+            </div>
+            <nav class="sidebar-nav">
+                <a href="#" class="nav-item active" data-content="trangchu">
+                    <i class="fas fa-home"></i>
+                    <span>Trang Chủ</span>
+                    <span>Home</span>
+                </a>
+                <a href="#" class="nav-item" data-content="upload">
+                    <i class="fas fa-upload"></i>
+                    <span>Tải lên Biểu mẫu</span>
+                </a>
+            </nav>
+        </div>
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="sidebar-header">
+                <h1>HỆ THỐNG BIỂU MẪU</h1>
+            </div>
+            <nav>
+                <ul class="nav-menu">
+                    <li class="nav-item">
+                        <a href="#" class="nav-link active">
+                            <i class="fas fa-home"></i>
+                            Trang chủ
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">
+                            <i class="fas fa-file-alt"></i>
+                            Biểu mẫu của tôi
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">
+                            <i class="fas fa-history"></i>
+                            Lịch sử
+                        </a>
+                    </li>
+                    <li class="nav-item">
+                        <a href="#" class="nav-link">
+                            <i class="fas fa-cog"></i>
+                            Cài đặt
+                        </a>
+                    </li>
+                </ul>
+            </nav>
+            <div class="user-profile">
+                <div class="user-avatar">
+                    <i class="fas fa-user"></i>
+                </div>
+                <div class="user-info">
+                    <p class="user-name">{{ current_user.name }}</p>
+                    <p class="user-role">Người dùng</p>
+                </div>
+                <button class="logout-btn">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <i class="fas fa-sign-out-alt"></i> Đăng xuất
+                </button>
+            </div>
+        </aside>
+
+        <!-- Main Content -->
+        <main class="main-content">
+            <div class="container">
+                <!-- Header Section -->
+                <div class="header">
+                    <h2><i class="fas fa-file-contract"></i> Quản lý Biểu mẫu</h2>
+                    <div class="search-bar">
+                        <input type="text" class="search-input" placeholder="Tìm kiếm biểu mẫu..." id="search-input">
+                    </div>
+                    <div class="user-info">
+                        <span class="user-name">
+                            <i class="fas fa-user"></i> {{ current_user.fullname }}
+                        </span>
+                        <a href="/logout" class="logout-btn">
+                            <i class="fas fa-sign-out-alt"></i> Đăng xuất
+                        </a>
+                </div>
+                    </div>
+
+                <!-- Upload Section -->
+                <section class="upload-section" id="upload-zone">
+                    <h3><i class="fas fa-upload"></i> Tải lên biểu mẫu mới</h3>
+                    <p>Kéo và thả file DOCX vào đây hoặc nhấp vào nút bên dưới</p>
+                    <label class="upload-label" for="file-upload">
+                        <i class="fas fa-cloud-upload-alt"></i>
+                        Chọn file DOCX
+                    </label>
+                    <input type="file" id="file-upload" accept=".docx">
+                    <div class="progress-bar" id="progress-bar">
+                        <div class="progress" id="progress"></div>
+    </div>
+                    <div id="upload-message" class="message"></div>
+                </section>
+
+                <!-- Recent Forms Section -->
+                <section class="forms-section">
+                    <h3><i class="fas fa-history"></i> Biểu mẫu gần đây</h3>
+                    <div class="form-grid" id="recent-forms"></div>
+                </section>
+                                    </div>
+        </main>
+                                    </div>
+
+    <script>
+        $(document).ready(function() {
+            const uploadZone = $('#upload-zone');
+            const progressBar = $('#progress-bar');
+            const progress = $('#progress');
+            const formGrid = $('#recent-forms');
+            const scrollLeftBtn = $('#scrollLeft');
+            const scrollRightBtn = $('#scrollRight');
+            let searchTimeout;
+
+            // Xử lý cuộn ngang
+            scrollLeftBtn.click(() => {
+                formGrid.animate({ scrollLeft: '-=300' }, 300);
+            });
+
+            scrollRightBtn.click(() => {
+                formGrid.animate({ scrollLeft: '+=300' }, 300);
+            });
+
+            // Cập nhật hiển thị nút cuộn
+            function updateScrollButtons() {
+                const scrollLeft = formGrid.scrollLeft();
+                const maxScroll = formGrid[0].scrollWidth - formGrid[0].clientWidth;
+
+                scrollLeftBtn.css('display', scrollLeft <= 0 ? 'none' : 'flex');
+                scrollRightBtn.css('display', scrollLeft >= maxScroll ? 'none' : 'flex');
+            }
+
+            formGrid.on('scroll', updateScrollButtons);
+            $(window).on('resize', updateScrollButtons);
+
+            // Thêm hiệu ứng khi trang tải xong
+            $('.container').css('opacity', '0').animate({opacity: 1}, 500);
+
+            function loadRecentForms(searchQuery = '') {
+                $.get('/get-recent-forms', { query: searchQuery }, function(data) {
+                    const recentForms = $('#recent-forms');
+                    recentForms.empty();
+
+                    if (data.forms && data.forms.length > 0) {
+                        data.forms.forEach(form => {
+                            // Check if form has form_data
+                            const hasFormData = form.form_data ? true : false;
+                            const formCard = $(`
+                                <div class="form-card" data-id="${form.id}">
+                                    <h4>${form.name}</h4>
+                                    <div class="form-meta">
+                                        <div><i class="far fa-clock"></i> ${form.date}</div>
+                                        <div><i class="far fa-file-word"></i> DOCX</div>
+                                        ${hasFormData ? '<div><i class="fas fa-check-circle" style="color: #10b981;"></i> Đã điền</div>' : ''}
+                            </div>
+                                    <div class="form-actions">
+                                        <button class="action-button edit-btn" onclick="editForm('${form.id}')">Chỉnh sửa</button>
+                                        <button class="action-button delete-btn" onclick="deleteForm('${form.id}')">Xóa</button>
+                                        ${hasFormData ? '<button class="action-button view-btn" onclick="viewFormDetails(\''+form.id+'\');">Xem chi tiết</button>' : ''}
+                                    </div>
+                                </div>
+                            `);
+                            recentForms.append(formCard);
+
+                            // Add click event to the form card
+                            formCard.on('click', function(e) {
+                                // Only trigger if not clicking on a button
+                                if (!$(e.target).closest('button').length) {
+                                    editForm(form.id);
+            }
+                            });
+                        });
+                    } else {
+                        recentForms.html(`
+                            <div class="empty-state">
+                                <i class="far fa-folder-open"></i>
+                                <p>Chưa có biểu mẫu nào. Hãy tải lên biểu mẫu đầu tiên của bạn!</p>
+                            </div>
+                        `);
+                    }
+                });
+            }
+
+            $('#search-input').on('input', function() {
+                const query = $(this).val();
+                clearTimeout(searchTimeout);
+                searchTimeout = setTimeout(() => loadRecentForms(query), 300);
+            });
+
+            function showMessage(text, type) {
+                const message = $('#upload-message');
+                message.removeClass('success error').addClass(type);
+                message.text(text).fadeIn();
+                setTimeout(() => message.fadeOut(), 5000);
+            }
+
+            function updateProgress(percent) {
+                progressBar.show();
+                progress.css('width', `${percent}%`);
+            }
+
+            function resetProgress() {
+                setTimeout(() => {
+                    progressBar.hide();
+                    progress.css('width', '0%');
+                }, 1000);
+            }
+
+            $('#file-upload').change(function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                if (!file.name.toLowerCase().endsWith('.docx')) {
+                    showMessage('Vui lòng chọn file DOCX', 'error');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                $.ajax({
+                    url: '/upload',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    xhr: function() {
+                        const xhr = new window.XMLHttpRequest();
+                        xhr.upload.addEventListener('progress', function(e) {
+                            if (e.lengthComputable) {
+                                const percent = (e.loaded / e.total) * 100;
+                                updateProgress(percent);
+                            }
+                        }, false);
+                        return xhr;
+                    },
+                    success: function(response) {
+                        showMessage('Tải lên thành công!', 'success');
+                        loadRecentForms();
+                        resetProgress();
+                        window.location.href = '/form';
+                    },
+                    error: function(xhr) {
+                        showMessage('Có lỗi xảy ra khi tải lên file', 'error');
+                        resetProgress();
+                    }
+                });
+            });
+
+            // Drag and drop support
+            uploadZone.on('dragover', function(e) {
+                e.preventDefault();
+                $(this).addClass('drag-over');
+            });
+
+            uploadZone.on('dragleave', function(e) {
+                e.preventDefault();
+                $(this).removeClass('drag-over');
+            });
+
+            uploadZone.on('drop', function(e) {
+                e.preventDefault();
+                $(this).removeClass('drag-over');
+                const files = e.originalEvent.dataTransfer.files;
+                if (files.length > 0) {
+                    $('#file-upload')[0].files = files;
+                    $('#file-upload').change();
+                }
+            });
+
+            // Initial load
+            loadRecentForms();
+        });
+
+        function editForm(formId) {
+            window.location.href = `/form/${formId}`;
+        }
+
+        function deleteForm(formId) {
+            if (confirm('Bạn có chắc chắn muốn xóa biểu mẫu này?')) {
+                $.ajax({
+                    url: `/delete-form/${formId}`,
+                    type: 'DELETE',
+                    success: function() {
+                        showMessage('Đã xóa biểu mẫu thành công', 'success');
+                        loadRecentForms();
+                    },
+                    error: function() {
+                        showMessage('Có lỗi xảy ra khi xóa biểu mẫu', 'error');
+                    }
+                });
+            }
+        }
+        
+        function viewFormDetails(formId) {
+            window.location.href = `/form/${formId}`;
+        }
+        
+        function showMessage(text, type) {
+            const message = $('#upload-message');
+            message.removeClass('success error').addClass(type);
+            message.text(text).fadeIn();
+            setTimeout(() => message.fadeOut(), 5000);
+        }
+    </script>
+</body>
+</html> 

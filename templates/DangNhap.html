@@ -1,0 +1,364 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>HỆ THỐNG ĐIỀN BIỂU MẪU TỰ ĐỘNG</title>
+    <link rel="stylesheet" href="{{ url_for('static', filename='css/style.css') }}">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css">
+    <!-- Thay đổi phần style trong thẻ head -->
+<style>
+    * {
+        margin: 0;
+        padding: 0;
+        box-sizing: border-box;
+        font-family: 'Arial', sans-serif;
+    }
+
+    body {
+        position: relative;
+        background-image: url('/static/images/hinh1.webp');
+        background-size: cover;
+        background-position: center;
+        background-repeat: no-repeat;
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        color: white;
+    }
+
+    /* Thêm lớp overlay để tạo hiệu ứng mờ cho background */
+    body::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.7); /* Điều chỉnh độ mờ tại đây */
+        backdrop-filter: blur(5px); /* Thêm hiệu ứng blur */
+        z-index: 1;
+    }
+
+    .container {
+        position: relative;
+        z-index: 2; /* Đặt container lên trên lớp overlay */
+        width: 100%;
+        max-width: 1000px;
+        padding: 20px;
+    }
+
+    .signup-container {
+        display: flex;
+        background: rgba(0, 0, 0, 0.8);
+        border-radius: 5px;
+        overflow: hidden;
+        box-shadow: 0 0 20px rgba(0, 0, 0, 0.5); /* Thêm đổ bóng */
+    }
+
+    .image-section {
+        flex: 1;
+        background: linear-gradient(rgba(0, 0, 0, 0.3), rgba(0, 0, 0, 0.3)),
+                    url('/static/images/hinh1.webp') center/cover;
+        padding: 40px;
+        position: relative;
+        display: flex;
+        flex-direction: column;
+        justify-content: center;
+        align-items: center;
+    }
+
+    .image-section::before {
+        content: '';
+        position: absolute;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.3); /* Thêm overlay cho phần hình ảnh */
+        z-index: 1;
+    }
+
+    .image-section h2, 
+    .image-section p {
+        position: relative;
+        z-index: 2;
+        text-align: center;
+        margin-top: 0;
+        text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5); /* Thêm đổ bóng cho text */
+    }
+
+    /* Phần CSS còn lại giữ nguyên */
+        .image-section h2 {
+            font-size: 2.5em;
+            margin-bottom: 20px;
+            font-weight: 300;
+        }
+
+        .form-section {
+            flex: 1;
+            padding: 40px;
+            background: #222;
+        }
+
+        .form-group {
+            margin-bottom: 20px;
+        }
+
+        .form-group input {
+            width: 100%;
+            padding: 12px;
+            background: transparent;
+            border: none;
+            border-bottom: 1px solid #444;
+            color: white;
+            font-size: 16px;
+        }
+
+        .form-group input::placeholder {
+            color: #666;
+        }
+
+        .form-group input:focus {
+            outline: none;
+            border-bottom-color: #3498db;
+        }
+
+        .register-btn {
+            width: 100%;
+            padding: 12px;
+            background: #3498db;
+            color: white;
+            border: none;
+            border-radius: 3px;
+            font-size: 16px;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-top: 20px;
+        }
+
+        .register-btn:hover {
+            background: #2980b9;
+        }
+
+        .social-login {
+            text-align: center;
+            margin-top: 30px;
+        }
+
+        .social-login p {
+            color: #666;
+            margin-bottom: 15px;
+            font-size: 14px;
+        }
+
+        .social-icons {
+            display: flex;
+            justify-content: center;
+            gap: 15px;
+        }
+
+        .social-icons a {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            border: 1px solid #444;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: #666;
+            text-decoration: none;
+            transition: all 0.3s;
+        }
+
+        .social-icons a:hover {
+            background: #3498db;
+            border-color: #3498db;
+            color: white;
+        }
+
+        @media (max-width: 768px) {
+            .signup-container {
+                flex-direction: column;
+            }
+            
+            .image-section {
+                padding: 60px 20px;
+            }
+            
+            .form-section {
+                padding: 30px 20px;
+            }
+        }
+        /* Thêm vào cuối file CSS hiện có */
+
+        .alert {
+            padding: 10px;
+            margin-bottom: 20px;
+            border-radius: 4px;
+            text-align: center;
+        }
+
+        .alert-error {
+            background-color: rgba(231, 76, 60, 0.2);
+            color: #e74c3c;
+            border: 1px solid #e74c3c;
+        }
+
+        .alert-success {
+            background-color: rgba(46, 204, 113, 0.2);
+            color: #2ecc71;
+            border: 1px solid #2ecc71;
+        }
+        /* Thêm vào cuối file CSS hiện có */
+
+        .remember-me {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: #666;
+        }
+
+        .remember-me input[type="checkbox"] {
+            width: auto;
+        }
+
+        .social-login a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .social-login a:hover {
+            text-decoration: underline;
+        }
+
+        /* Dashboard styles */
+        .dashboard-container {
+            min-height: 100vh;
+            background: #1a1a1a;
+            color: white;
+        }
+
+        .dashboard-nav {
+            background: #222;
+            padding: 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .logout-btn {
+            background: #e74c3c;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 4px;
+            text-decoration: none;
+            transition: background 0.3s;
+        }
+
+        .logout-btn:hover {
+            background: #c0392b;
+        }
+
+        .dashboard-content {
+            max-width: 800px;
+            margin: 40px auto;
+            padding: 20px;
+        }
+
+        .user-info {
+            background: #222;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .user-info h3 {
+            margin-bottom: 20px;
+            color: #3498db;
+        }
+
+        .user-info p {
+            margin: 10px 0;
+            color: #ccc;
+        }
+
+        .user-info strong {
+            color: white;
+        }
+        .signup-link {
+            text-align: center;
+            margin-top: 15px;
+        }
+
+        .signup-link a {
+            color: #3498db;
+            text-decoration: none;
+        }
+
+        .signup-link a:hover {
+            text-decoration: underline;
+        }
+        .main-title {
+            text-align: center;
+            margin-bottom: 30px;
+            font-weight: 300;
+            letter-spacing: 2px;
+            text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.5);
+        }
+
+
+
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1 class="main-title">HỆ THỐNG ĐIỀN BIỂU MẪU</h1>
+        <div class="signup-container">
+            <div class="image-section">
+                <h2>ĐĂNG NHẬP</h2>
+                <p>Chào mừng bạn quay trở lại</p>
+            </div>
+            <div class="form-section">
+                {% with messages = get_flashed_messages(with_categories=true) %}
+                    {% if messages %}
+                        {% for category, message in messages %}
+                            <div class="alert alert-{{ category }}">
+                                {{ message }}
+                            </div>
+                        {% endfor %}
+                    {% endif %}
+                {% endwith %}
+                
+                <form action="/login" method="POST">
+
+
+
+                    <div class="form-group">
+                        <input type="email" name="email" placeholder="Email" required>
+                    </div>
+                    <div class="form-group">
+                        <input type="password" name="password" placeholder="Mật khẩu" required>
+                    </div>
+                    <div class="form-group remember-me">
+                        <input type="checkbox" name="remember" id="remember">
+                        <label for="remember">Ghi nhớ đăng nhập</label>
+                    </div>
+                    <button type="submit" class="register-btn">Đăng nhập</button>
+                    <div class="signup-link">
+                        <p>Chưa có tài khoản? <a href="{{ url_for('signup') }}">Đăng ký ngay</a></p>
+                    </div>
+                    <div class="social-login">
+                        <p>Hoặc đăng nhập với</p>
+                        <div class="social-icons">
+                            <a href="#"><i class="fab fa-facebook-f"></i></a>
+                            <a href="#"><i class="fab fa-google"></i></a>
+                            <a href="#"><i class="fab fa-twitter"></i></a>
+                        </div>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</body>
+</html>

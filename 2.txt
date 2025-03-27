@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Quản lý Biểu mẫu</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
+    <script src="https://code.jquery.com/jquery-3.6.0.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f8f9fa;
+        }
+        .container {
+            max-width: 900px;
+            margin: auto;
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+        }
+        .header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+        .form-list {
+            display: flex;
+            gap: 10px;
+            overflow-x: auto;
+        }
+        .form-item {
+            background: #fff;
+            border-radius: 5px;
+            padding: 10px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+            text-align: center;
+            flex: 1;
+            min-width: 150px;
+        }
+        .upload-section {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .upload-section input {
+            display: none;
+        }
+        .upload-label {
+            display: inline-block;
+            padding: 10px 20px;
+            background: #007bff;
+            color: white;
+            border-radius: 5px;
+            cursor: pointer;
+            transition: background-color 0.3s;
+        }
+        .upload-label:hover {
+            background: #0056b3;
+        }
+        .message {
+            margin-top: 10px;
+            padding: 10px;
+            border-radius: 5px;
+            display: none;
+        }
+        .success {
+            background-color: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+        }
+        .error {
+            background-color: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h2>Quản lý Biểu mẫu</h2>
+        </div>
+        <h3>Biểu mẫu gần đây</h3>
+        <div class="form-list" id="recent-forms"></div>
+        <div class="upload-section">
+            <label class="upload-label" for="file-upload">Tải lên biểu mẫu DOCX</label>
+            <input type="file" id="file-upload" accept=".docx">
+            <div id="upload-message" class="message"></div>
+        </div>
+    </div>
+    <script>
+        $(document).ready(function() {
+            // Load recent forms
+            function loadRecentForms() {
+                $.get('/get-recent-forms', function(data) {
+                    const recentForms = $('#recent-forms');
+                    recentForms.empty();
+                    data.forms.forEach(form => {
+                        recentForms.append(`<div class="form-item">${form.name}</div>`);
+                    });
+                });
+            }
+
+            // Handle file upload
+            $('#file-upload').change(function(e) {
+                const file = e.target.files[0];
+                if (!file) return;
+
+                if (!file.name.toLowerCase().endsWith('.docx')) {
+                    showMessage('Vui lòng chọn file DOCX', 'error');
+                    return;
+                }
+
+                const formData = new FormData();
+                formData.append('file', file);
+
+                $.ajax({
+                    url: '/upload',
+                    type: 'POST',
+                    data: formData,
+                    processData: false,
+                    contentType: false,
+                    success: function(response) {
+                        showMessage('Tải lên thành công!', 'success');
+                        loadRecentForms();
+                        window.location.href = '/form';
+                    },
+                    error: function() {
+                        showMessage('Có lỗi xảy ra khi tải lên file', 'error');
+                    }
+                });
+            });
+
+            function showMessage(text, type) {
+                const message = $('#upload-message');
+                message.removeClass('success error').addClass(type);
+                message.text(text).fadeIn();
+                setTimeout(() => message.fadeOut(), 3000);
+            }
+
+            // Initial load
+            loadRecentForms();
+        });
+    </script>
+</body>
+</html>

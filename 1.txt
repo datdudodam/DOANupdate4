@@ -1,0 +1,43 @@
+import re
+from docx import Document
+
+# Đọc nội dung từ file .docx
+doc_path = r"D:\LUẬN VĂN AI\147\uploads\ke_toan.docx"
+doc = Document(doc_path)
+text = "\n".join([para.text.strip() for para in doc.paragraphs])  # Gộp các đoạn thành chuỗi, loại bỏ khoảng trắng đầu/cuối
+
+# Tìm tất cả vị trí của [_XXX_]
+matches = re.finditer(r"\[_\d+_\]", text)
+
+fields = []
+special_words = {"ngày", "tháng", "năm"}  # Các từ đặc biệt cần giữ nguyên
+
+for match in matches:
+    end_index = match.start()  # Vị trí bắt đầu của [_XXX_]
+    field_name = ""
+    
+    # Duyệt ngược để tìm chữ cái viết hoa đầu tiên hoặc từ đặc biệt
+    i = end_index - 1
+    while i >= 0 and text[i] == " ":
+        i -= 1  # Bỏ qua khoảng trắng
+
+    # Nếu gặp từ đặc biệt (ngày, tháng, năm), lấy luôn
+    for word in special_words:
+        if text[max(0, i - len(word) + 1):end_index].strip().lower() == word:
+            field_name = word
+            break
+
+    # Nếu không phải từ đặc biệt, tìm chữ hoa đầu tiên
+    if not field_name:
+        for j in range(i, -1, -1):
+            if text[j].isupper():
+                field_name = text[j:end_index].strip()
+                break
+
+    
+    if field_name:
+        fields.append(field_name)
+
+# In kết quả
+for field in fields:
+    print(field)
