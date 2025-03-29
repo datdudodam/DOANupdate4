@@ -3,7 +3,7 @@ from config.config import DEBUG  # Đảm bảo DEBUG tồn tại trong config.p
 from routes.home_routes import register_home_routes
 from routes.form_routes import register_form_routes
 from routes.docx_routes import register_docx_routes
-from routes.auth import dangNhap_Dangky
+from routes import register_routes
 from flask_login import LoginManager
 from models.user import User, db
 
@@ -23,7 +23,7 @@ with app.app_context():
     db.create_all()
 
 # Cấu hình Flask-Login
-login_manager = LoginManager()
+login_manager = LoginManager() 
 login_manager.init_app(app)
 login_manager.login_view = 'login'  # Đặt view đăng nhập mặc định
 
@@ -33,10 +33,7 @@ def load_user(user_id):
         return User.query.get(int(user_id))
 
 # Đăng ký các route
-register_home_routes(app)
-register_form_routes(app)
-register_docx_routes(app)
-dangNhap_Dangky(app)
+register_routes(app)
 
 if __name__ == '__main__':
     app.run(debug=DEBUG)

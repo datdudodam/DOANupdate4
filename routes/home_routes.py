@@ -1,14 +1,14 @@
 from flask import render_template, request, jsonify
 from utils.document_utils import upload_document
-
+from flask import redirect, url_for
+from flask_login import current_user
 def register_home_routes(app):
     """
     Đăng ký các route cho trang chủ và tải lên tài liệu
     """
     @app.route('/')
     def index():
-        from flask import redirect, url_for
-        from flask_login import current_user
+        
         
         if not current_user.is_authenticated:
             return redirect('/login')

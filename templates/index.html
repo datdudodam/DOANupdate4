@@ -120,6 +120,28 @@
                                         Gợi ý AI cho {{ field.field_name }}
                                     </div>
                                 </button>
+                                <button 
+                                    type="button" 
+                                    onclick="loadMlSuggestions('{{ field.field_code }}')" 
+                                    class="suggestion-button px-4 py-2 bg-purple-50 hover:bg-purple-100 text-purple-600 rounded-xl transition-all duration-300 flex items-center justify-center shadow-sm hover:shadow focus:ring-2 focus:ring-purple-200 touch-manipulation relative group"
+                                    title="Gợi ý thông minh"
+                                    aria-label="Gợi ý thông minh cho {{ field.field_name }}"
+                                >
+                                    <span class="ml-suggestion-loading hidden">
+                                        <svg class="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                                            <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                                            <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                                        </svg>
+                                    </span>
+                                    <span class="ml-suggestion-icon">
+                                        <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9.75 17L9 20l-1 1h8l-1-1-.75-3M3 13h18M5 17h14a2 2 0 002-2V5a2 2 0 00-2-2H5a2 2 0 00-2 2v10a2 2 0 002 2z"></path>
+                                        </svg>
+                                    </span>
+                                    <div class="absolute invisible group-hover:visible bg-purple-600 text-white text-xs rounded py-1 px-2 -top-8 left-1/2 transform -translate-x-1/2 whitespace-nowrap">
+                                        Gợi ý thông minh cho {{ field.field_name }}
+                                    </div>
+                                </button>
                             </div>
                             <ul id="suggestions-{{ field.field_code }}" class="absolute z-10 w-full bg-white/95 mt-2 rounded-xl shadow-lg border border-gray-100 hidden max-h-48 overflow-y-auto backdrop-blur-sm divide-y divide-gray-100">
                             </ul>
@@ -390,6 +412,95 @@
     });
 }
 
+        function loadMlSuggestions(fieldCode) {
+            const suggestionsList = document.getElementById(`suggestions-${fieldCode}`);
+            const input = document.getElementById(fieldCode);
+            const button = input.nextElementSibling.nextElementSibling.nextElementSibling;
+            const loadingIcon = button.querySelector('.ml-suggestion-loading');
+            const suggestionIcon = button.querySelector('.ml-suggestion-icon');
+            const errorDiv = document.getElementById(`error-${fieldCode}`);
+            
+            // Lấy tất cả giá trị hiện tại của form
+            const formData = {};
+            document.querySelectorAll('form input[type="text"]').forEach(input => {
+                if (input.value.trim()) {
+                    formData[input.id] = input.value.trim();
+                }
+            });
+            
+            // Lấy văn bản ngữ cảnh từ các trường đã điền
+            let contextText = Object.values(formData).join(' ');
+    
+            // Toggle loading state
+            loadingIcon.classList.remove('hidden');
+            suggestionIcon.classList.add('hidden');
+            button.disabled = true;
+            errorDiv.classList.add('hidden');
+    
+            fetch('/get_ml_suggestions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify({ 
+                    field_code: fieldCode,
+                    partial_form: formData,
+                    context_text: contextText
+                })
+            })
+            .then(response => {
+                if (!response.ok) {
+                    throw new Error('Network response was not ok');
+                }
+                return response.json();
+            })
+            .then(data => {
+                suggestionsList.innerHTML = '';
+                if (data.suggestions && data.suggestions.length > 0) {
+                    data.suggestions.forEach((suggestion, index) => {
+                        const li = document.createElement('li');
+                        li.className = 'px-4 py-3 hover:bg-purple-50 cursor-pointer transition-colors duration-200 touch-manipulation';
+                        li.textContent = suggestion;
+                        li.setAttribute('role', 'option');
+                        li.setAttribute('tabindex', '0');
+                        li.onclick = () => {
+                            input.value = suggestion;
+                            suggestionsList.classList.add('hidden');
+                            input.focus();
+                        };
+                        li.onkeypress = (e) => {
+                            if (e.key === 'Enter' || e.key === ' ') {
+                                input.value = suggestion;
+                                suggestionsList.classList.add('hidden');
+                                input.focus();
+                            }
+                        };
+                        suggestionsList.appendChild(li);
+                    });
+                    suggestionsList.classList.remove('hidden');
+                    suggestionsList.setAttribute('role', 'listbox');
+                    suggestionsList.setAttribute('aria-label', 'Danh sách gợi ý thông minh');
+                } else {
+                    // Hiển thị thông báo lỗi chi tiết nếu có
+                    if (data.error_details) {
+                        errorDiv.textContent = `Không có gợi ý thông minh: ${data.error_details}`;
+                    } else {
+                        errorDiv.textContent = 'Không có gợi ý thông minh nào cho trường này';
+                    }
+                    errorDiv.classList.remove('hidden');
+                }
+            })
+            .catch(error => {
+                console.error('Error:', error);
+                errorDiv.textContent = 'Có lỗi xảy ra khi tải gợi ý thông minh. Vui lòng thử lại.';
+                errorDiv.classList.remove('hidden');
+            })
+            .finally(() => {
+                loadingIcon.classList.add('hidden');
+                suggestionIcon.classList.remove('hidden');
+                button.disabled = false;
+            });
+        }
     </script>
 </body>
 </html>

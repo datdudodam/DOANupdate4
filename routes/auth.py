@@ -3,6 +3,10 @@ from flask_login import login_user, login_required, logout_user, current_user
 from models.user import db, User
 from utils.validators import validate_email, validate_password
 
+def register_auth_routes(app):
+    """ Đăng ký các route xác thực """
+    dangNhap_Dangky(app)
+
 def dangNhap_Dangky(app):
     """ Đăng ký và Đăng nhập
     """

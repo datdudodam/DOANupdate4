@@ -2,8 +2,8 @@ import numpy as np
 import pandas as pd
 from sklearn.feature_extraction.text import TfidfVectorizer
 from sklearn.metrics.pairwise import cosine_similarity
-from surprise import Dataset, Reader, SVD, accuracy
-from surprise.model_selection import train_test_split
+# Removed surprise import that was causing issues
+
 from collections import defaultdict
 import re
 import nltk
@@ -13,6 +13,7 @@ from nltk.stem import WordNetLemmatizer
 import os
 import json
 from config.config import FORM_HISTORY_PATH
+
 
 # Đảm bảo các tài nguyên NLTK được tải xuống
 try:
@@ -140,24 +141,27 @@ class MLRecommender:
         # Tìm các trường đã có giá trị trong form hiện tại
         filled_fields = {k: v for k, v in partial_form.items() if v and k != field_code}
         
-        if not filled_fields:  # Nếu chưa có trường nào được điền
-            return []
+        # Nếu chưa có trường nào được điền, trả về các giá trị phổ biến nhất cho field_code
+        if not filled_fields:
+            return self._get_most_common_values(field_code)
             
         # Tính toán similarity giữa các trường
         if not self.field_similarities:
             self._calculate_field_similarities()
             
         # Tìm các trường có liên quan đến field_code
-        related_fields = self._get_related_fields(field_code)
+        related_fields = self._get_related_fields(field_code, threshold=0.2)  # Giảm ngưỡng xuống 0.2 (từ 0.3)
         
         # Lọc ra các trường đã điền và có liên quan
         relevant_filled_fields = {k: v for k, v in filled_fields.items() if k in related_fields}
         
-        if not relevant_filled_fields:  # Nếu không có trường liên quan nào được điền
-            return []
-            
-        # Tìm các form có giá trị tương tự cho các trường đã điền
-        similar_forms = self._find_similar_forms(relevant_filled_fields)
+        # Nếu không có trường liên quan nào được điền, sử dụng tất cả các trường đã điền
+        if not relevant_filled_fields:
+            # Sử dụng tất cả các trường đã điền thay vì chỉ các trường liên quan
+            similar_forms = self._find_similar_forms(filled_fields)
+        else:
+            # Tìm các form có giá trị tương tự cho các trường đã điền và có liên quan
+            similar_forms = self._find_similar_forms(relevant_filled_fields)
         
         # Lấy giá trị của field_code từ các form tương tự
         recommendations = []
@@ -168,11 +172,20 @@ class MLRecommender:
                     recommendations.append(value)
                     if len(recommendations) >= 5:  # Giới hạn 5 gợi ý
                         break
+        
+        # Nếu không tìm thấy đủ gợi ý, bổ sung bằng các giá trị phổ biến nhất
+        if len(recommendations) < 2:
+            common_values = self._get_most_common_values(field_code)
+            for value in common_values:
+                if value not in recommendations:
+                    recommendations.append(value)
+                    if len(recommendations) >= 5:
+                        break
                         
         return recommendations
     
     def get_collaborative_recommendations(self, user_id, field_code):
-        """Lấy gợi ý dựa trên Collaborative Filtering"""
+        """Lấy gợi ý dựa trên Collaborative Filtering nâng cao"""
         if not self.svd_model or not self.user_item_matrix.shape[0] > 0:
             return []
             
@@ -184,13 +197,60 @@ class MLRecommender:
                 
             prediction = self.svd_model.predict(user_id, field_code)
             
-            # Nếu dự đoán rating cao, tìm các giá trị phổ biến cho field_code
-            if prediction.est > 0.5:  # Ngưỡng rating
+            # Cải tiến 1: Sử dụng ngưỡng rating động dựa trên dữ liệu
+            # Tính toán ngưỡng dựa trên trung bình của các dự đoán
+            all_predictions = []
+            for u_id in range(min(5, len(self.form_data))):
+                try:
+                    pred = self.svd_model.predict(u_id, field_code)
+                    all_predictions.append(pred.est)
+                except:
+                    pass
+                    
+            # Tính ngưỡng động nếu có đủ dữ liệu, nếu không sử dụng ngưỡng mặc định
+            if all_predictions:
+                dynamic_threshold = max(0.4, np.mean(all_predictions) * 0.8)
+            else:
+                dynamic_threshold = 0.5
+                
+            # Nếu dự đoán rating cao hơn ngưỡng, tìm các giá trị phổ biến cho field_code
+            if prediction.est > dynamic_threshold:
+                # Cải tiến 2: Tìm các form tương tự với form hiện tại
+                similar_users = []
+                
+                # Tìm các user có hành vi tương tự
+                if self.user_item_matrix is not None and len(self.form_data) > 1:
+                    # Lấy các trường đã điền của user hiện tại
+                    current_user_fields = set()
+                    if user_id < len(self.form_data):
+                        current_user_fields = set(self.form_data[user_id].keys())
+                    
+                    # Tìm các user có nhiều trường chung nhất
+                    for u_id, form in enumerate(self.form_data):
+                        if u_id != user_id:
+                            common_fields = len(set(form.keys()).intersection(current_user_fields))
+                            if common_fields > 0:
+                                similar_users.append((u_id, common_fields))
+                    
+                    # Sắp xếp theo số lượng trường chung giảm dần
+                    similar_users.sort(key=lambda x: x[1], reverse=True)
+                    similar_users = [u[0] for u in similar_users[:5]]  # Lấy top 5 user tương tự
+                
                 # Tìm các form có điền field_code
                 field_values = []
-                for form in self.form_data:
-                    if field_code in form and form[field_code]:
-                        field_values.append(form[field_code])
+                
+                # Ưu tiên lấy giá trị từ các user tương tự
+                for u_id in similar_users:
+                    if u_id < len(self.form_data) and field_code in self.form_data[u_id] and self.form_data[u_id][field_code]:
+                        field_values.append(self.form_data[u_id][field_code])
+                
+                # Nếu chưa đủ, lấy thêm từ các form khác
+                if len(field_values) < 5:
+                    for form in self.form_data:
+                        if field_code in form and form[field_code] and form[field_code] not in field_values:
+                            field_values.append(form[field_code])
+                            if len(field_values) >= 5:
+                                break
                         
                 # Đếm tần suất và lấy top 5 giá trị phổ biến nhất
                 if field_values:
@@ -202,7 +262,7 @@ class MLRecommender:
         return []
     
     def get_nlp_recommendations(self, field_code, context_text=""):
-        """Lấy gợi ý dựa trên phân tích NLP"""
+        """Lấy gợi ý dựa trên phân tích NLP nâng cao"""
         if not self.field_vectors or field_code not in self.field_vectors:
             return []
             
@@ -223,11 +283,33 @@ class MLRecommender:
             # Tính toán similarity giữa văn bản ngữ cảnh và các giá trị của field_code
             similarities = cosine_similarity(context_vector, matrix).flatten()
             
-            # Lấy top 5 giá trị tương tự nhất
-            top_indices = similarities.argsort()[-5:][::-1]
-            recommendations = [values[i] for i in top_indices if similarities[i] > 0]
+            # Cải tiến 1: Áp dụng ngưỡng động dựa trên phân phối similarity
+            # Tính ngưỡng dựa trên trung bình và độ lệch chuẩn
+            mean_sim = np.mean(similarities)
+            std_sim = np.std(similarities)
+            dynamic_threshold = max(0.1, mean_sim + 0.5 * std_sim)  # Ngưỡng tối thiểu 0.1
             
-            return recommendations
+            # Lấy top 5 giá trị tương tự nhất vượt qua ngưỡng
+            top_indices = similarities.argsort()[-10:][::-1]  # Lấy top 10 để có nhiều lựa chọn hơn
+            recommendations = []
+            
+            # Cải tiến 2: Phân tích ngữ cảnh sâu hơn bằng cách tìm từ khóa chung
+            for i in top_indices:
+                if similarities[i] > dynamic_threshold:
+                    # Kiểm tra sự xuất hiện của các từ khóa chung
+                    value_tokens = set(values[i].split())
+                    context_tokens = set(processed_context.split())
+                    common_tokens = value_tokens.intersection(context_tokens)
+                    
+                    # Tính điểm dựa trên similarity và số từ khóa chung
+                    score = similarities[i] * (1 + 0.2 * len(common_tokens))
+                    
+                    recommendations.append((values[i], score))
+            
+            # Sắp xếp theo điểm và lấy top 5
+            recommendations.sort(key=lambda x: x[1], reverse=True)
+            return [rec[0] for rec in recommendations[:5]]
+            
         except Exception as e:
             print(f"Lỗi khi lấy gợi ý NLP: {e}")
             
@@ -303,27 +385,117 @@ class MLRecommender:
         form_scores.sort(key=lambda x: x[1], reverse=True)
         
         return form_scores
+        
+    def _get_most_common_values(self, field_code):
+        """Lấy các giá trị phổ biến nhất cho một trường"""
+        if not self.form_data:
+            return []
+            
+        # Thu thập tất cả các giá trị của field_code
+        values = []
+        for form in self.form_data:
+            if field_code in form and form[field_code]:
+                values.append(form[field_code])
+                
+        if not values:
+            return []
+            
+        # Đếm tần suất xuất hiện của mỗi giá trị
+        value_counts = {}
+        for value in values:
+            if value in value_counts:
+                value_counts[value] += 1
+            else:
+                value_counts[value] = 1
+                
+        # Sắp xếp theo tần suất giảm dần
+        sorted_values = sorted(value_counts.items(), key=lambda x: x[1], reverse=True)
+        
+        # Trả về top 5 giá trị phổ biến nhất
+        return [value for value, _ in sorted_values[:5]]
     
     def get_combined_recommendations(self, partial_form, field_code, context_text=""):
-        """Kết hợp các phương pháp gợi ý để có kết quả tốt nhất"""
+        """Kết hợp các phương pháp gợi ý để có kết quả tốt nhất với trọng số thông minh"""
         # Lấy gợi ý từ các phương pháp khác nhau
         content_recs = self.get_content_based_recommendations(partial_form, field_code)
         collab_recs = self.get_collaborative_recommendations(len(self.form_data), field_code)  # Coi form hiện tại là user mới
         nlp_recs = self.get_nlp_recommendations(field_code, context_text)
         
-        # Kết hợp các gợi ý, ưu tiên theo thứ tự: content > collaborative > nlp
-        combined_recs = []
+        # Cải tiến 1: Sử dụng hệ thống trọng số thông minh
+        # Xác định trọng số dựa trên số lượng trường đã điền và độ dài context_text
+        filled_fields_count = sum(1 for _, v in partial_form.items() if v)
         
-        # Thêm gợi ý từ content-based (ưu tiên cao nhất)
-        combined_recs.extend([rec for rec in content_recs if rec not in combined_recs])
+        # Tính trọng số cho từng phương pháp
+        content_weight = 1.0
+        collab_weight = 1.0
+        nlp_weight = 1.0
         
-        # Thêm gợi ý từ collaborative
-        combined_recs.extend([rec for rec in collab_recs if rec not in combined_recs])
+        # Điều chỉnh trọng số dựa trên dữ liệu hiện có
+        if filled_fields_count > 2:  # Nếu đã điền nhiều trường
+            content_weight = 1.5  # Tăng trọng số cho content-based
+        else:
+            collab_weight = 1.3  # Tăng trọng số cho collaborative
+            
+        if context_text and len(context_text) > 10:  # Nếu có ngữ cảnh văn bản đủ dài
+            nlp_weight = 1.4  # Tăng trọng số cho NLP
         
-        # Thêm gợi ý từ NLP
-        combined_recs.extend([rec for rec in nlp_recs if rec not in combined_recs])
+        # Cải tiến 2: Tạo từ điển điểm số cho mỗi gợi ý
+        rec_scores = {}
         
-        # Giới hạn số lượng gợi ý
+        # Tính điểm cho các gợi ý từ content-based
+        for i, rec in enumerate(content_recs):
+            # Điểm giảm dần theo thứ tự xuất hiện
+            score = content_weight * (1.0 - i * 0.1)  # 1.0, 0.9, 0.8, ...
+            if rec in rec_scores:
+                rec_scores[rec] += score
+            else:
+                rec_scores[rec] = score
+        
+        # Tính điểm cho các gợi ý từ collaborative
+        for i, rec in enumerate(collab_recs):
+            score = collab_weight * (1.0 - i * 0.1)
+            if rec in rec_scores:
+                rec_scores[rec] += score
+            else:
+                rec_scores[rec] = score
+        
+        # Tính điểm cho các gợi ý từ NLP
+        for i, rec in enumerate(nlp_recs):
+            score = nlp_weight * (1.0 - i * 0.1)
+            if rec in rec_scores:
+                rec_scores[rec] += score
+            else:
+                rec_scores[rec] = score
+        
+        # Cải tiến 3: Sắp xếp gợi ý theo điểm số và trả về top 5
+        sorted_recs = sorted(rec_scores.items(), key=lambda x: x[1], reverse=True)
+        combined_recs = [rec for rec, _ in sorted_recs[:5]]
+        
+        # Nếu không có đủ gợi ý, thêm các gợi ý từ các phương pháp theo thứ tự ưu tiên
+        if len(combined_recs) < 5:
+            # Thêm gợi ý từ content-based (ưu tiên cao nhất)
+            for rec in content_recs:
+                if rec not in combined_recs:
+                    combined_recs.append(rec)
+                    if len(combined_recs) >= 5:
+                        break
+            
+            # Thêm gợi ý từ collaborative
+            if len(combined_recs) < 5:
+                for rec in collab_recs:
+                    if rec not in combined_recs:
+                        combined_recs.append(rec)
+                        if len(combined_recs) >= 5:
+                            break
+            
+            # Thêm gợi ý từ NLP
+            if len(combined_recs) < 5:
+                for rec in nlp_recs:
+                    if rec not in combined_recs:
+                        combined_recs.append(rec)
+                        if len(combined_recs) >= 5:
+                            break
+        
         return combined_recs[:5]
 
 # Singleton instance
@@ -343,8 +515,53 @@ def get_ml_suggestions(field_code, partial_form=None, context_text=""):
     """Hàm tiện ích để lấy gợi ý từ ML"""
     if partial_form is None:
         partial_form = {}
+    
+    # Kiểm tra xem field_code có hợp lệ không
+    if not field_code or not isinstance(field_code, str):
+        print(f"Lỗi: field_code không hợp lệ: {field_code}")
+        return []
         
     recommender = get_recommender()
-    suggestions = recommender.get_combined_recommendations(partial_form, field_code, context_text)
+    
+    # Kiểm tra xem có dữ liệu form nào không
+    if not recommender.form_data:
+        print("Lỗi: Không có dữ liệu form nào để đưa ra gợi ý")
+        return []
+    
+    # Kiểm tra xem field_code có xuất hiện trong bất kỳ form nào không
+    field_exists = False
+    field_has_value = False
+    for form in recommender.form_data:
+        if field_code in form:
+            field_exists = True
+            if form[field_code]:  # Kiểm tra xem trường có giá trị không
+                field_has_value = True
+                break
+    
+    if not field_exists:
+        print(f"Lỗi: Trường {field_code} không tồn tại trong bất kỳ form nào")
+        return []
+        
+    if not field_has_value:
+        print(f"Lỗi: Trường {field_code} chưa có giá trị trong bất kỳ form nào")
+        return []
+    
+    # Lấy các giá trị phổ biến nhất cho trường này
+    common_values = recommender._get_most_common_values(field_code)
+    
+    # Nếu có ít nhất một giá trị phổ biến, trả về ngay cả khi không có đủ dữ liệu liên quan
+    if common_values:
+        # Thử lấy gợi ý từ các phương pháp kết hợp
+        suggestions = recommender.get_combined_recommendations(partial_form, field_code, context_text)
+        
+        # Nếu không có gợi ý từ phương pháp kết hợp, sử dụng các giá trị phổ biến
+        if not suggestions:
+            suggestions = common_values
+    else:
+        # Nếu không có giá trị phổ biến nào, thử lấy gợi ý từ phương pháp kết hợp
+        suggestions = recommender.get_combined_recommendations(partial_form, field_code, context_text)
+    
+    # Ghi log kết quả để debug
+    print(f"Gợi ý cho trường {field_code}: {suggestions}")
     
     return suggestions
